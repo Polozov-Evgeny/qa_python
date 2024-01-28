@@ -1,24 +1,72 @@
-from main import BooksCollector
+import pytest
 
-# класс TestBooksCollector объединяет набор тестов, которыми мы покрываем наше приложение BooksCollector
-# обязательно указывать префикс Test
+
 class TestBooksCollector:
 
-    # пример теста:
-    # обязательно указывать префикс test_
-    # дальше идет название метода, который тестируем add_new_book_
-    # затем, что тестируем add_two_books - добавление двух книг
-    def test_add_new_book_add_two_books(self):
-        # создаем экземпляр (объект) класса BooksCollector
-        collector = BooksCollector()
+    def test_add_new_book_add_one_book(self, collector):
+        collector.add_new_book('Властелин колец')
 
-        # добавляем две книги
-        collector.add_new_book('Гордость и предубеждение и зомби')
-        collector.add_new_book('Что делать, если ваш кот хочет вас убить')
+        assert collector.books_genre.get('Властелин колец') == ''
 
-        # проверяем, что добавилось именно две
-        # словарь books_rating, который нам возвращает метод get_books_rating, имеет длину 2
-        assert len(collector.get_books_rating()) == 2
+    def test_set_book_genre_set_one_genre(self, collector):
+        collector.add_new_book('Властелин колец')
+        collector.set_book_genre('Властелин колец', 'Фантастика')
 
-    # напиши свои тесты ниже
-    # чтобы тесты были независимыми в каждом из них создавай отдельный экземпляр класса BooksCollector()
+        assert collector.books_genre.get('Властелин колец') == 'Фантастика'
+
+    @pytest.mark.parametrize('book_name, genre', [
+        ['Властелин колец', 'Фантастика'],
+        ['Дракула', 'Ужасы'],
+        ['Рассказы о Шерлоке Холмсе', 'Детективы'],
+        ['Остров сокровищ', 'Мультфильмы'],
+        ['Ревизор', 'Комедии']
+    ])
+    def test_get_book_genre_get_genres(self, book_name, genre, collector, add_books_with_genres):
+        assert collector.get_book_genre(book_name) == genre
+
+    @pytest.mark.parametrize('book_name, genre', [
+        ['Властелин колец', 'Фантастика'],
+        ['Дракула', 'Ужасы'],
+        ['Рассказы о Шерлоке Холмсе', 'Детективы'],
+        ['Остров сокровищ', 'Мультфильмы'],
+        ['Ревизор', 'Комедии']
+    ])
+    def test_get_books_with_specific_genre_get_books_with_different_genres(self, book_name, genre, collector,
+                                                                           add_books_with_genres):
+        assert collector.get_books_with_specific_genre(genre) == [book_name]
+
+    def test_get_books_genre_get_books_with_all_genres(self, collector, add_books_with_genres):
+        expected_result = {
+            'Властелин колец': 'Фантастика',
+            'Дракула': 'Ужасы',
+            'Рассказы о Шерлоке Холмсе': 'Детективы',
+            'Остров сокровищ': 'Мультфильмы',
+            'Ревизор': 'Комедии'
+        }
+
+        assert collector.get_books_genre() == expected_result
+
+    def test_get_books_for_children_get_books_not_from_the_genre_age_rating_list(self, collector, add_books_with_genres):
+        expected_result = ['Властелин колец', 'Остров сокровищ', 'Ревизор']
+
+        assert collector.get_books_for_children() == expected_result
+
+    def test_add_book_in_favorites_add_one_book_in_favorites(self, collector, add_books_with_genres):
+        collector.add_book_in_favorites('Властелин колец')
+
+        assert 'Властелин колец' in collector.favorites
+
+    def test_delete_book_from_favorites_delete_one_book_from_favorites(self, collector, add_books_with_genres):
+        collector.add_book_in_favorites('Властелин колец')
+        collector.add_book_in_favorites('Остров сокровищ')
+        collector.delete_book_from_favorites('Властелин колец')
+
+        assert not 'Властелин колец' in collector.favorites and 'Остров сокровищ' in collector.favorites
+
+    def test_get_list_of_favorites_books_get_three_favorites_books(self, collector, add_books_with_genres):
+        collector.add_book_in_favorites('Властелин колец')
+        collector.add_book_in_favorites('Остров сокровищ')
+        collector.add_book_in_favorites('Ревизор')
+        expected_result = ['Властелин колец', 'Остров сокровищ', 'Ревизор']
+
+        assert collector.get_list_of_favorites_books() == expected_result
