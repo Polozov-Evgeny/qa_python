@@ -1,24 +1,114 @@
-from main import BooksCollector
+import pytest
 
-# класс TestBooksCollector объединяет набор тестов, которыми мы покрываем наше приложение BooksCollector
-# обязательно указывать префикс Test
+
 class TestBooksCollector:
 
-    # пример теста:
-    # обязательно указывать префикс test_
-    # дальше идет название метода, который тестируем add_new_book_
-    # затем, что тестируем add_two_books - добавление двух книг
-    def test_add_new_book_add_two_books(self):
-        # создаем экземпляр (объект) класса BooksCollector
-        collector = BooksCollector()
+    def test_add_new_book_add_one_book(self, collector):
+        collector.add_new_book('Властелин колец')
 
-        # добавляем две книги
-        collector.add_new_book('Гордость и предубеждение и зомби')
-        collector.add_new_book('Что делать, если ваш кот хочет вас убить')
+        assert collector.books_genre.get('Властелин колец') == ''
 
-        # проверяем, что добавилось именно две
-        # словарь books_rating, который нам возвращает метод get_books_rating, имеет длину 2
-        assert len(collector.get_books_rating()) == 2
+    @pytest.mark.parametrize('book_name', [
+        'Властелин колец',
+        '',
+        'Длинное название любимой книги, 41 символ'
+    ])
+    def test_add_new_book_book_is_not_added(self, book_name, collector):
+        collector.add_new_book('Властелин колец')
+        collector.add_new_book(book_name)
 
-    # напиши свои тесты ниже
-    # чтобы тесты были независимыми в каждом из них создавай отдельный экземпляр класса BooksCollector()
+        assert collector.books_genre == {'Властелин колец': ''}
+
+    def test_set_book_genre_set_one_genre(self, collector):
+        collector.add_new_book('Властелин колец')
+        collector.set_book_genre('Властелин колец', 'Фантастика')
+
+        assert collector.books_genre.get('Властелин колец') == 'Фантастика'
+
+    @pytest.mark.parametrize('book_name, genre', [
+        ['Несуществующее название', 'Фантастика'],
+        ['Бедная Лиза', 'Несущетвующий жанр'],
+        ['Несуществующее название', 'Несущетвующий жанр']
+    ])
+    def test_set_book_genre_genre_is_not_set(self, book_name, genre, collector):
+        collector.add_new_book('Бедная Лиза')
+        collector.set_book_genre(book_name, genre)
+
+        assert collector.books_genre == {'Бедная Лиза': ''}
+
+    def test_get_book_genre_get_genre(self, collector):
+        collector.add_new_book('Властелин колец')
+        collector.set_book_genre('Властелин колец', 'Фантастика')
+
+        assert collector.get_book_genre('Властелин колец') == 'Фантастика'
+
+    def test_get_books_with_specific_genre_get_books_with_identical_genre(self, collector):
+        collector.books_genre = {
+            'Властелин колец': 'Фантастика',
+            'Дракула': 'Ужасы',
+            'Рассказы о Шерлоке Холмсе': 'Детективы',
+            'Остров сокровищ': 'Мультфильмы',
+            'Ревизор': 'Комедии',
+            'Гарри Поттер': 'Фантастика'
+        }
+
+        assert collector.get_books_with_specific_genre('Фантастика') == ['Властелин колец', 'Гарри Поттер']
+
+    def test_get_books_genre_get_dictionary_books_with_genre(self, collector):
+        collector.add_new_book('Властелин колец')
+        collector.add_new_book('Дракула')
+        collector.set_book_genre('Властелин колец', 'Фантастика')
+        collector.set_book_genre('Дракула', 'Ужасы')
+
+        expected_result = {
+            'Властелин колец': 'Фантастика',
+            'Дракула': 'Ужасы'
+        }
+
+        assert collector.get_books_genre() == expected_result
+
+    def test_get_books_for_children_get_books_not_from_the_genre_age_rating_list(self, collector):
+        collector.books_genre = {
+            'Властелин колец': 'Фантастика',
+            'Дракула': 'Ужасы',
+            'Рассказы о Шерлоке Холмсе': 'Детективы',
+            'Остров сокровищ': 'Мультфильмы',
+            'Ревизор': 'Комедии'
+        }
+
+        expected_result = ['Властелин колец', 'Остров сокровищ', 'Ревизор']
+
+        assert collector.get_books_for_children() == expected_result
+
+    def test_get_books_for_children_get_empty_book_list(self, collector):
+        collector.books_genre = {
+            'Дракула': 'Ужасы',
+            'Рассказы о Шерлоке Холмсе': 'Детективы',
+            'Выдуманная книга': '',
+            'Несуществующая книга': 'Жанр'
+        }
+
+        expected_result = []
+
+        assert collector.get_books_for_children() == expected_result
+
+    def test_add_book_in_favorites_add_one_book_in_favorites(self, collector):
+        collector.add_new_book('Властелин колец')
+        collector.set_book_genre('Властелин колец', 'Фантастика')
+        collector.add_book_in_favorites('Властелин колец')
+
+        assert 'Властелин колец' in collector.favorites
+
+    def test_delete_book_from_favorites_delete_one_book_from_favorites(self, collector):
+        collector.favorites = ['Властелин колец', 'Остров сокровищ']
+        collector.delete_book_from_favorites('Властелин колец')
+
+        assert collector.favorites == ['Остров сокровищ']
+
+    def test_get_list_of_favorites_books_get_two_favorites_books(self, collector):
+        collector.add_new_book('Властелин колец')
+        collector.add_new_book('Остров сокровищ')
+        collector.add_book_in_favorites('Властелин колец')
+        collector.add_book_in_favorites('Остров сокровищ')
+
+        assert collector.get_list_of_favorites_books() == ['Властелин колец', 'Остров сокровищ']
